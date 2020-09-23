@@ -6,6 +6,15 @@ bls12-381 implementation in huff
 
 These instructions are thanks to @poemm's Huff patch and can be found [here](https://gist.github.com/poemm/bf50b9c8f18c33c0883461ede3a4ae8a)
 
+## Quick Start
+
+```bash
+# first clone this repo, then enter the main dir of that cloned repo
+sh huff.sh
+```
+
+huff.sh is an automated version of the following commands:
+
 ```bash
 # Make sure you're in this projects main directory
 git clone https://github.com/AztecProtocol/huff.git

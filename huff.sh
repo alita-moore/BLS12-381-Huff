@@ -1,0 +1,6 @@
+eval $'git clone https://github.com/AztecProtocol/huff.git'
+eval $'patch -s -p0 < custom-opcodes/huff.patch'
+eval $'cd huff'
+eval $'npm install'
+eval $'cd ..'
+eval $'node ./custom-opcodes/test.js'
