@@ -1,3 +1,6 @@
 /.history
 .vscode
 huff
+node_modules
+GethChain
+evmone

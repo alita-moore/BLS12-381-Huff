@@ -18,6 +18,8 @@ const f6m_mul = parser.processMacro(
   jumptables
 );
 
+console.log(f6m_mul);
+
 const isF6mCorrect =
   "0x" + f6m_mul.data.bytecode === expected.f6m_mul_v7.exec.code;
 const message = `f6m_mul ${isF6mCorrect ? "passed" : "failed"}`;

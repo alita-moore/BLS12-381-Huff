@@ -1,0 +1,23 @@
+{
+  "name": "bls12-381-huff",
+  "version": "1.0.0",
+  "description": "BLS12-381 implementation in huff",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alita-moore/BLS12-381-Huff.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alita-moore/BLS12-381-Huff/issues"
+  },
+  "homepage": "https://github.com/alita-moore/BLS12-381-Huff#readme",
+  "dependencies": {
+    "evmasm": "0.0.3",
+    "evmc": "^1.0.8"
+  }
+}
