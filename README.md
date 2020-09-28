@@ -27,3 +27,16 @@ cd ..
 # run test.js to verify the opcodes were installed properly
 node ./custom-opcodes/test.js
 ```
+# 2. Install dependencies
+```bash
+npm install
+sudo pacman -S geth
+```
+
+# 3. Create a private evm
+```bash
+mkdir privatechain
+cd privatechain
+puppeth
+```
+follow [this](https://hackernoon.com/hands-on-creating-your-own-local-private-geth-node-beginner-friendly-3d45902cc612) to setup the system
