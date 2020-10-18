@@ -38,7 +38,7 @@ class Huff:
     line += "mstore"
     self.lines.append(line)
 
-  def _memcopy(self, dst_offset, src_offset,len_):
+  def gen_memcopy(self, dst_offset, src_offset,len_):
     """
       copies the object into memory
     """

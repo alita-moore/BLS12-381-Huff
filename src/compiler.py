@@ -1,6 +1,42 @@
+from EVM import EVM
+
+# https://docs.python.org/2.0/ref/numeric-types.html
+
+buffer_offset = 0
+zero = buffer_offset
+f1zero = buffer_offset	# 48 bytes
+f2zero = buffer_offset	# 96 bytes
+f6zero = buffer_offset	# 288 bytes
+f12zero = buffer_offset	# 576 bytes
+buffer_offset += 576
+f12one = buffer_offset	# 576 bytes
+buffer_offset += 576
+mod = buffer_offset	# 56 bytes, mod||inv
+buffer_offset += 56
+buffer_miller_loop = buffer_offset	# 1 E2 point, 1 E1 point affine
+buffer_offset += 288+96
+buffer_line = buffer_offset		# 3 f2 points
+buffer_offset += 288
+buffer_f2mul = buffer_offset	# 3 f1 points
+buffer_offset += 144
+buffer_f6mul = buffer_offset	# 6 f2 points
+buffer_offset += 576
+buffer_f12mul = buffer_offset	# 3 f6 points
+buffer_offset += 864
+buffer_Eadd = buffer_offset	# 14 or 9 values
+buffer_offset += 14*3*96
+buffer_Edouble = buffer_offset	# 7 or 6 values
+buffer_offset += 7*3*96
+buffer_inputs = buffer_offset
+buffer_offset += 2*48+2*96
+buffer_output = buffer_offset
+out = buffer_offset
+buffer_offset += 12*48
+
 class Huff:
   def __init__(self):
     self.lines = []
+    self.EVM = EVM()
     self.addmod384_count=0
     self.submod384_count=0
     self.mulmodmont384_count=0
@@ -13,37 +49,7 @@ class Huff:
     self.f12add_count=0
     self.f12sub_count=0
     self.f12mul_count=0
-    buffer_offset = 0
-    self.zero = buffer_offset
-    self.f1zero = buffer_offset	# 48 bytes
-    self.f2zero = buffer_offset	# 96 bytes
-    self.f6zero = buffer_offset	# 288 bytes
-    self.f12zero = buffer_offset	# 576 bytes
-    buffer_offset += 576
-    self.f12one = buffer_offset	# 576 bytes
-    buffer_offset += 576
-    self.mod = buffer_offset	# 56 bytes, mod||inv
-    buffer_offset += 56
-    self.buffer_miller_loop = buffer_offset	# 1 E2 point, 1 E1 point affine
-    buffer_offset += 288+96
-    self.buffer_line = buffer_offset		# 3 f2 points
-    buffer_offset += 288
-    self.buffer_f2mul = buffer_offset	# 3 f1 points
-    buffer_offset += 144
-    self.buffer_f6mul = buffer_offset	# 6 f2 points
-    buffer_offset += 576
-    self.buffer_f12mul = buffer_offset	# 3 f6 points
-    buffer_offset += 864
-    self.buffer_Eadd = buffer_offset	# 14 or 9 values
-    buffer_offset += 14*3*96
-    self.buffer_Edouble = buffer_offset	# 7 or 6 values
-    buffer_offset += 7*3*96
-    self.buffer_inputs = buffer_offset
-    buffer_offset += 2*48+2*96
-    self.buffer_output = buffer_offset
-    buffer_offset += 12*48
-    self.buffer_offset = buffer_offset
-  
+
   def gen_memstore(self, dst_offset, bytes_):
     """
       takes in a bytestring greater than 32 bytes and
@@ -59,13 +65,18 @@ class Huff:
       line += hex(dst_offset) + ' '
       line += "mstore"
       self.lines.append(line)
+      self.EVM.memstore(dst_offset, bytes_[idx:idx+32])
       # step
-      dst_offset+=32
-      idx+=32
+      dst_offset += 32
+      idx += 32
     line = "0x"+ str(bytes_[-32:]).encode("hex") + ' '
     line += hex(dst_offset+len(bytes_[idx:])-32) + ' '
     line += "mstore"
     self.lines.append(line)
+    self.EVM.memstore(dst_offset+len(bytes_[idx:])-32, bytes_[-32:])
+
+  def print(self, string):
+    self.lines.append("// " + string)
 
   def gen_memcopy(self, dst_offset, src_offset,len_):
     """
@@ -76,10 +87,11 @@ class Huff:
       return
     while len_>32:
       len_-=32
-      self.lines.append(hex(src_offset))
-      self.lines.append("mload")
-      self.lines.append(hex(dst_offset))
-      self.lines.append("mstore")
+      line = hex(src_offset) + " mload"
+      line += hex(dst_offset) + " mstore"
+      self.lines.append(line)
+
+
       src_offset+=32
       dst_offset+=32
     self.lines.append(hex(src_offset-(32-len_)))
@@ -87,233 +99,195 @@ class Huff:
     self.lines.append(hex(dst_offset-(32-len_)))
     self.lines.append("mstore")
 
-  def gen_evm384_offsets(self,a,b,c,d):
+  def execute(self,data,action):
+    # e.g. 0x00000758000004b8000004e800000480 addmod384
     line = "0x"
-    line += hex(a)[2:].zfill(8)
-    line += hex(b)[2:].zfill(8)
-    line += hex(c)[2:].zfill(8)
-    line += hex(d)[2:].zfill(8)
+    for item in data:
+      line += hex(item)[2:].zfill(8)
     line += ' '
+    line += action
     self.lines.append(line)
 
-  def gen_mul_by_u_plus_1_fp2(self,out,x,mod):
-    t = self.buffer_f2mul	# to prevent clobbering
-    self.gen_f1sub(t, x, x+48, mod)
-    self.gen_f1add(out+48, x, x+48, mod)
-    self.gen_memcopy(out,t,48)
-    
-  def gen_fadd(self,f,out,x,y,mod):
-    if f=="f12":
-      self.gen_f12add(out,x,y,mod)
-    if f=="f6":
-      self.gen_f6add(out,x,y,mod)
-    if f=="f2":
-      self.gen_f2add(out,x,y,mod)
-    if f=="f1":
-      self.gen_f1add(out,x,y,mod)
-
-  def gen_fsub(self,f,out,x,y,mod):
-    if f=="f12":
-      self.gen_f12sub(out,x,y,mod)
-    if f=="f6":
-      self.gen_f6sub(out,x,y,mod)
-    if f=="f2":
-      self.gen_f2sub(out,x,y,mod)
-    if f=="f1":
-      self.gen_f1sub(out,x,y,mod)
-
-  def gen_fmul(self,f,out,x,y,mod):
-    if f=="f12":
-      self.gen_f12mul(out,x,y,mod)
-    if f=="f6":
-      self.gen_f6mul(out,x,y,mod)
-    if f=="f2":
-      self.gen_f2mul(out,x,y,mod)
-    if f=="f1":
-      self.gen_f1mul(out,x,y,mod)
-
-  def gen_fsqr(self,f,out,x,mod):
-    if f=="f12":
-      self.gen_f12sqr(out,x,mod)
-    if f=="f6":
-      self.gen_f6sqr(out,x,mod)
-    if f=="f2":
-      self.gen_f2sqr(out,x,mod)
-    if f=="f1":
-      self.gen_f1sqr(out,x,mod)   
-
 class F1():
-  def __init__(self, out, value, mod, huff):
+  def __init__(self, value, buffer_output=buffer_output, mod=mod, huff= Huff(), debug= False):
     self.huff = huff
-    self.out = out
     self.value = value
+    self.out = buffer_output
     self.mod = mod
-
+    self.debug = debug
   def __add__(self, other):
-    # TODO: handle if case if false
     if isinstance(other, self.__class__):
+      if self.debug:
+        self.huff.print("F1 + F1")
+        self.huff.addmod384_count+=1
+      out = self.out
       x = self.value
       y = other.value
-      out = self.out
       mod = self.mod
-      self.huff.gen_evm384_offsets(out,x,y,mod)
+      data = [out, x, y, mod]
 
-      # debugging
-      print("addmod384")
-      self.huff.addmod384_count+=1
-
+      action = "addmod384"
+      self.huff.execute(data, action)
   def __sub__(self,other):
     if isinstance(other, self.__class__):
+      if self.debug:
+        self.huff.print("F1 - F1")
+        self.huff.submod384_count += 1
+      out = self.out
       x = self.value
       y = other.value
-      out = self.out
       mod = self.mod
-      self.huff.gen_evm384_offsets(out,x,y,mod)
-
-      # debugging
-      print("submod384")
-      self.huff.submod384_count+=1
-    
+      data = [out, x, y, mod]
+      
+      action = "submod384"
+      self.huff.execute(data, action)
   def __mul__(self,other):
     if isinstance(other, self.__class__):
+      if self.debug:
+        self.huff.print("F1 * F1")
+        self.huff.submod384_count+=1
+      out = self.out
       x = self.value
       y = other.value
-      out = self.out
       mod = self.mod
-      self.huff.gen_evm384_offsets(out,x,y,mod)
-
-      # debugging
-      print("mulmod384")
-      self.huff.submod384_count+=1
-    
+      data = [out, x, y, mod]
+      
+      action = "mulmod384"
+      self.huff.execute(data,action)
   def __neg__(self):
-    y = self.value
+    if self.debug:
+      self.huff.print("-F1")
+      self.huff.submod384_count+=1
     out = self.out
+    x = 0
+    y = self.value
     mod = self.mod
-    self.huff.gen_evm384_offsets(out,0,y,mod)
-
-    # debugging
-    print("submod384")
-    self.huff.submod384_count+=1
+    data = [out, x, y, mod]
+    
+    action = "submod384"
+    self.huff.execute(data,action)
 
 class F2():
-  def __init__(self, out, value, mod, huff):
+  def __init__(self, x, y, out_offset=buffer_output, modifier=mod, huff= Huff(), debug= False):
     self.huff = huff
-    self.out = out
-    self.mod = mod
+    self.out = out_offset
     self.x = x
     self.y = y
-
-  def __add__(self,out,x,y,mod):
+    self.debug = debug
+    self.modifier = modifier
+  def __add__(self, other):
     if isinstance(other, self.__class__):
-      self.huff.f2add_count+=1
-      print("// f2 add")
+      if (self.debug):
+        self.huff.print("F2 + F2")
+        self.huff.f2add_count+=1
+      # setup the values
+      x0 = self.x
+      x1 = other.x + 48
+      y0 = self.y
+      y1 = other.y + 48
+      out0 = self.out
+      out1 = self.out + 48
+      mod = self.modifier
+      # attach points to F1
+      # value, buffer, modifier, huff instance
+      x0 = F1(x0, out0, mod, self.huff)
+      x1 = F1(x1, out1, mod, self.huff)
+      y0 = F1(y0, out0, mod, self.huff)
+      y1 = F1(y1, out1, mod, self.huff)
+      x0 + y0
+      x1 + y1
+  def __sub__(self,other):
+    if isinstance(other, self.__class__):
+      self.f2sub_count+=1
+      print("// f2 sub")
       x0 = self.x
       x1 = x+48
-      y0 = self.y
+      y0 = y
       y1 = y+48
       out0 = out
       out1 = out+48
-
-      x0 = F1(out0, x0, mod, self.huff)
-      x1 = F1(out1, x1, mod, self.huff)
-      y0 = F1(out0, y0, mod, self.huff)
-      y1 = F1(out1, y1, mod, self.huff)
-      x0 + y0
-      x1 + y1
-
-  def gen_f2sub(self,out,x,y,mod):
-    self.f2sub_count+=1
-    print("// f2 sub")
-    x0 = x
-    x1 = x+48
-    y0 = y
-    y1 = y+48
-    out0 = out
-    out1 = out+48
-    self.gen_f1sub(out0,x0,y0,mod)
-    self.gen_f1sub(out1,x1,y1,mod)
-
-  def gen_f2mul(self,out,x,y,mod):
-    self.f2mul_count+=1
-    print("// f2 mul")
-    # get offsets
-    x0 = x
-    x1 = x+48
-    y0 = y
-    y1 = y+48
-    out0 = out
-    out1 = out+48
-    # temporary values
-    tmp1 = self.buffer_f2mul
-    tmp2 = tmp1+48
-    tmp3 = tmp2+48
-    """
-    tmp1 = x0*y0
-    tmp2 = x1*y1
-    tmp3 = zero-tmp2
-    out0 = tmp1+tmp3
-    tmp1 = tmp1+tmp2
-    tmp2 = x0+x1
-    tmp3 = y0+y1
-    tmp2 = tmp2*tmp3
-    out1 = tmp2-tmp1
-    """
-    if 0:
-      self.gen_f1mul(tmp1,x0,y0,mod)
-      self.gen_f1mul(tmp2,x1,y1,mod)
-      self.gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
-      self.gen_f1mul(tmp1,x0,y1,mod)
-      self.gen_f1mul(tmp2,x1,y0,mod)
-      self.gen_f1add(out1,tmp1,tmp2,mod)
-    elif 1:
-      self.gen_f1mul(tmp1,x0,y0,mod)
-      self.gen_f1mul(tmp2,x1,y1,mod)
-      self.gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
-      self.gen_f1add(tmp1,tmp1,tmp2,mod)
-      self.gen_f1add(tmp2,x0,x1,mod)
-      self.gen_f1add(tmp3,y0,y1,mod)
-      self.gen_f1mul(tmp2,tmp2,tmp3,mod)
-      self.gen_f1sub(out1,tmp2,tmp1,mod)
-    elif 0:
-      self.gen_f1mul(tmp1,x0,y0,mod)			# t1 = x0*y0
-      self.gen_f1sub(tmp2,self.zero,x1,mod)			# t2 = -x1
-      self.gen_f1mul(tmp2,tmp2,y1,mod)			# t2 = -x1*y1
-      self.gen_f1add(out0,tmp1,tmp2,mod)		# out0 = t1+t2
-      self.gen_f1add(tmp3,x0,x1,mod)			# t3 = x0+y0
-      self.gen_f1add(out1,y0,y1,mod)			# out1 = x1+y1
-      self.gen_f1mul(out1,out1,tmp3,mod)		# out1 = out1*t3
-      self.gen_f1sub(out1,out1,tmp1,mod)		# out1 = out1-t1
-      self.gen_f1add(out1,out1,tmp2,mod)		# out1 = out1+t2
-    elif 0:
-      self.gen_f1mul(tmp1,x0,y0,mod)                   # t1 = x0*y0
-      self.gen_f1mul(tmp2,x1,y1,mod)                 # t2 = x1*y1
-      self.gen_f1sub(out0,tmp1,tmp2,mod)               # out0 = t1-t2
-      self.gen_f1add(tmp3,x0,x1,mod)                   # t3 = x0+y0
-      self.gen_f1add(out1,y0,y1,mod)                   # out1 = x1+y1
-      self.gen_f1mul(out1,out1,tmp3,mod)               # out1 = out1*t3
-      self.gen_f1sub(out1,out1,tmp1,mod)               # out1 = out1-t1
-      self.gen_f1sub(out1,out1,tmp2,mod)               # out1 = out1-t2
-
-  def gen_f2sqr(self,out,x,mod):
-    self.f2mul_count+=1
-    print("// f2sqr")
-    if 0:
-      self.gen_f2mul(out,x,x,mod)
-    else:
+      self.gen_f1sub(out0,x0,y0,mod)
+      self.gen_f1sub(out1,x1,y1,mod)
+  def __mul__(self, other):
+    if isinstance(other, self.__class__):
+      self.f2mul_count+=1
+      print("// f2 mul")
       # get offsets
       x0 = x
       x1 = x+48
+      y0 = y
+      y1 = y+48
       out0 = out
       out1 = out+48
-      tmp0 = self.buffer_f2mul
-      tmp1 = tmp0+48
-      self.gen_f1add(tmp0,x0,x1,mod)
-      self.gen_f1sub(tmp1,x0,x1,mod)
-      self.gen_f1mul(out1,x0,x1,mod)
-      self.gen_f1add(out1,out1,out1,mod)
-      self.gen_f1mul(out0,tmp0,tmp1,mod)
-    
+      # temporary values
+      tmp1 = buffer_f2mul
+      tmp2 = tmp1+48
+      tmp3 = tmp2+48
+      """
+      tmp1 = x0*y0
+      tmp2 = x1*y1
+      tmp3 = zero-tmp2
+      out0 = tmp1+tmp3
+      tmp1 = tmp1+tmp2
+      tmp2 = x0+x1
+      tmp3 = y0+y1
+      tmp2 = tmp2*tmp3
+      out1 = tmp2-tmp1
+      """
+      if 0:
+        self.gen_f1mul(tmp1,x0,y0,mod)
+        self.gen_f1mul(tmp2,x1,y1,mod)
+        self.gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
+        self.gen_f1mul(tmp1,x0,y1,mod)
+        self.gen_f1mul(tmp2,x1,y0,mod)
+        self.gen_f1add(out1,tmp1,tmp2,mod)
+      elif 1:
+        self.gen_f1mul(tmp1,x0,y0,mod)
+        self.gen_f1mul(tmp2,x1,y1,mod)
+        self.gen_f1sub(out0,tmp1,tmp2,mod)		# above sub,add give same result as just this sub
+        self.gen_f1add(tmp1,tmp1,tmp2,mod)
+        self.gen_f1add(tmp2,x0,x1,mod)
+        self.gen_f1add(tmp3,y0,y1,mod)
+        self.gen_f1mul(tmp2,tmp2,tmp3,mod)
+        self.gen_f1sub(out1,tmp2,tmp1,mod)
+      elif 0:
+        self.gen_f1mul(tmp1,x0,y0,mod)			# t1 = x0*y0
+        self.gen_f1sub(tmp2,zero,x1,mod)			# t2 = -x1
+        self.gen_f1mul(tmp2,tmp2,y1,mod)			# t2 = -x1*y1
+        self.gen_f1add(out0,tmp1,tmp2,mod)		# out0 = t1+t2
+        self.gen_f1add(tmp3,x0,x1,mod)			# t3 = x0+y0
+        self.gen_f1add(out1,y0,y1,mod)			# out1 = x1+y1
+        self.gen_f1mul(out1,out1,tmp3,mod)		# out1 = out1*t3
+        self.gen_f1sub(out1,out1,tmp1,mod)		# out1 = out1-t1
+        self.gen_f1add(out1,out1,tmp2,mod)		# out1 = out1+t2
+      elif 0:
+        self.gen_f1mul(tmp1,x0,y0,mod)                   # t1 = x0*y0
+        self.gen_f1mul(tmp2,x1,y1,mod)                 # t2 = x1*y1
+        self.gen_f1sub(out0,tmp1,tmp2,mod)               # out0 = t1-t2
+        self.gen_f1add(tmp3,x0,x1,mod)                   # t3 = x0+y0
+        self.gen_f1add(out1,y0,y1,mod)                   # out1 = x1+y1
+        self.gen_f1mul(out1,out1,tmp3,mod)               # out1 = out1*t3
+        self.gen_f1sub(out1,out1,tmp1,mod)               # out1 = out1-t1
+        self.gen_f1sub(out1,out1,tmp2,mod)               # out1 = out1-t2
+  def __pow__(self, power):
+    if (power == 2):
+      self.f2mul_count+=1
+      print("// f2sqr")
+      if 0:
+        self.gen_f2mul(out,x,x,mod)
+      else:
+        # get offsets
+        x0 = x
+        x1 = x+48
+        out0 = out
+        out1 = out+48
+        tmp0 = buffer_f2mul
+        tmp1 = tmp0+48
+        self.gen_f1add(tmp0,x0,x1,mod)
+        self.gen_f1sub(tmp1,x0,x1,mod)
+        self.gen_f1mul(out1,x0,x1,mod)
+        self.gen_f1add(out1,out1,out1,mod)
+        self.gen_f1mul(out0,tmp0,tmp1,mod)
   def gen_f2neg(self,out,in_,mod):
     #gen_f2sub(out,zero,in_,mod)
     self.gen_f1sub(out,mod,in_,mod)
@@ -379,7 +353,7 @@ class F6():
     out1 = out0+96
     out2 = out1+96
     # temporary variables
-    t0 = self.buffer_f6mul
+    t0 = buffer_f6mul
     t1 = t0+96
     t2 = t1+96
     t3 = t2+96
@@ -459,7 +433,7 @@ class F12():
     out02 = out01+96
     out1 = out0+288
     # temporary variables
-    t0 = self.buffer_f12mul
+    t0 = buffer_f12mul
     t00 = t0
     t01 = t00+96
     t02 = t01+96
@@ -501,7 +475,7 @@ class F12():
     out02 = out01+96
     out1 = out0+288
     # temporary variables
-    t0 = self.buffer_f12mul
+    t0 = buffer_f12mul
     t00 = t0
     t01 = t00+96
     t02 = t01+96
