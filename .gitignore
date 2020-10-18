@@ -4,3 +4,6 @@ huff
 node_modules
 GethChain
 evmone
+src/.evm
+src/.compiler
+src/__pycache__
