@@ -1,6 +1,7 @@
 from EVM import EVM
 evm = EVM(32)
-evm.mstore(23, bytearray(range(256)))
+test = bytearray(range(233))
+evm.mstore(50, test)
 print(evm.m)
 quit()
 
