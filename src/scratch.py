@@ -37,7 +37,8 @@ GENESIS_STATE = {
 chain = MainnetChain.from_genesis(AtomicDB(), GENESIS_PARAMS, GENESIS_STATE)
 
 def add(computation):
-  return 1
+  computation.stack_pop1_int()
+  computation.stack_push_int(69)
 
 add_op = as_opcode(add, "ADD", 1)
 
@@ -62,5 +63,8 @@ computation = chain.get_vm()._state_class.computation_class(state, message, tx)
 ####################
 computation.stack_push_int(1)
 computation.stack_push_int(1)
+computation.opcodes[opcode_values.ADD] = add
 computation.opcodes[opcode_values.ADD](computation)
 result = computation.stack_pop1_int()
+print(result)
+# result = 2
