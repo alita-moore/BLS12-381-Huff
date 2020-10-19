@@ -91,6 +91,9 @@ class Memory:
   def load(self, offset):
     finalByte = offset + self.word_len
     if finalByte > len(self.data):
+      overflow = finalByte - len(self.data) 
+      return self.data[offset:] + bytearray(overflow)
+    else:
       return self.data[offset:finalByte]
     
 class EVM:

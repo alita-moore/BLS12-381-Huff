@@ -9,7 +9,6 @@ from eth import constants
 from eth.chains.mainnet import MainnetChain
 from eth.db.atomic import AtomicDB
 from eth_utils import to_wei, encode_hex
-
 MOCK_ADDRESS = constants.ZERO_ADDRESS
 DEFAULT_INITIAL_BALANCE = to_wei(10000, 'ether')
 GENESIS_PARAMS = {
@@ -24,7 +23,6 @@ GENESIS_PARAMS = {
     'extra_data': constants.GENESIS_EXTRA_DATA,
     'nonce': constants.GENESIS_NONCE
 }
-
 GENESIS_STATE = {
     MOCK_ADDRESS: {
         "balance": DEFAULT_INITIAL_BALANCE,
@@ -33,14 +31,10 @@ GENESIS_STATE = {
         "storage": {}
     }
 }
-
 chain = MainnetChain.from_genesis(AtomicDB(), GENESIS_PARAMS, GENESIS_STATE)
-
 def add(computation):
   return 1
-
 add_op = as_opcode(add, "ADD", 1)
-
 def gen_context(chain):
   CANONICAL_ADDRESS_A = to_canonical_address("0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6")
   CANONICAL_ADDRESS_B = to_canonical_address("0xcd1722f3947def4cf144679da39c4c32bdc35681")
@@ -58,9 +52,4 @@ def gen_context(chain):
   return state, message, tx_context
 
 state, message, tx = gen_context(chain)
-computation = chain.get_vm()._state_class.computation_class(state, message, tx)
-####################
-computation.stack_push_int(1)
-computation.stack_push_int(1)
-computation.opcodes[opcode_values.ADD](computation)
-result = computation.stack_pop1_int()
+test = chain.get_vm()._state_class.computation_class(state, message, tx)
