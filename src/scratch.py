@@ -63,7 +63,7 @@ computation = chain.get_vm()._state_class.computation_class(state, message, tx)
 ####################
 computation.stack_push_int(1)
 computation.stack_push_int(1)
-computation.opcodes[opcode_values.ADD] = add
+computation.opcodes[opcode_values.ADD] = add_op
 computation.opcodes[opcode_values.ADD](computation)
 result = computation.stack_pop1_int()
 print(result)
