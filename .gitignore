@@ -7,3 +7,4 @@ evmone
 src/.evm
 src/.compiler
 src/__pycache__
+src/EVM/__pycache__
