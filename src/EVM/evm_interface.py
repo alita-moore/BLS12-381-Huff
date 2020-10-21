@@ -337,13 +337,18 @@ def merge(*dicts, **kwargs):
 
 ###########################################################################
 
-GENESIS_HEADER = BlockHeader(
+
+def instantiate_vm(vm_class):
+  GENESIS_HEADER = BlockHeader(
     difficulty=17179869184,
     block_number=BlockNumber(0),
     gas_limit=5000,
-)
+  )
+  chain_context = ChainContext(None)
+  db = AtomicDB()
+  return vm_class(GENESIS_HEADER, ChainDB(db), chain_context, ConsensusContext(db))
 
-def setup_computation(vm_class, code):
+def setup_computation(VM, code):
   CANONICAL_ADDRESS_A = to_canonical_address("0x0f572e5295c57f15886f9b263e2f6d2d6c7b5ec6")
   CANONICAL_ADDRESS_B = to_canonical_address("0xcd1722f3947def4cf144679da39c4c32bdc35681")
   message = Message(
@@ -356,18 +361,16 @@ def setup_computation(vm_class, code):
     gas=1000000,
   )
 
-  chain_context = ChainContext(None)
-  tx_context = vm_class._state_class.transaction_context_class(
+  tx_context = VM._state_class.transaction_context_class(
       gas_price=1,
       origin=CANONICAL_ADDRESS_B,
   )
 
-  db = AtomicDB()
-  vm = vm_class(GENESIS_HEADER, ChainDB(db), chain_context, ConsensusContext(db))
-  computation = vm_class._state_class.computation_class(
-      state=vm.state,
+  computation =VM._state_class.computation_class(
+      state=VM.state,
       message=message,
       transaction_context=tx_context,
   )
 
   return computation
+

@@ -1,7 +1,21 @@
-from evm_interface import merge, assemble, setup_computation
+from evm_interface import merge, assemble, setup_computation, instantiate_vm
 from typing import Type
 import copy
+from typing import NewType, Callable, TypeVar, Union, Type, AnyStr
+import copy
+import re
+import binascii
+from abc import ABCMeta, abstractmethod
 
+from eth_hash.auto import keccak
+from eth.vm.message import Message
+from eth.vm import opcode_values
+from eth.consensus import ConsensusContext
+from eth.rlp.headers import BlockHeader
+from eth.db.chain import ChainDB
+from eth.db.atomic import AtomicDB
+from eth.vm.chain_context import ChainContext
+from collections.abc import Mapping
 from eth import constants
 from eth.vm.computation import BaseComputation
 from eth.vm.forks.istanbul import IstanbulVM
@@ -31,8 +45,8 @@ UPDATED_OPCODES = {
 }
 
 CUSTOM_OPCODES = merge(
-    copy.deepcopy(ISTANBUL_OPCODES),
-    UPDATED_OPCODES,
+  copy.deepcopy(ISTANBUL_OPCODES),
+  UPDATED_OPCODES
 )
 
 class CustomComputation(IstanbulComputation):
@@ -44,19 +58,34 @@ class CustomState(IstanbulState):
 class CustomVm(IstanbulVM):
     _state_class: Type[BaseState] = CustomState
 
-code = assemble(
-    opcode_values.PUSH1,
-    0x1,
-    opcode_values.PUSH1,
-    0x1,
-    SUBTRACT_OPCODE_VALUE
-)
-
-computation = setup_computation(CustomVm, code)
-comp = computation.apply_message(
-        computation.state,
-        computation.msg,
-        computation.transaction_context,
+class EVM():
+  def __init__(self):
+    self.VM = instantiate_vm(CustomVm)
+    self.computation = setup_computation(self.VM, b"")
+  def execute(self, code):
+    pass
+  
+  def PUSH1(self, val):
+    print(val)
+    code = assemble(opcode_values.PUSH1, val)
+    comp = setup_computation(self.VM, code)
+    self.computation = self.computation.apply_message(
+      self.computation.state,
+      comp.msg,
+      self.computation.transaction_context
     )
-result = comp.stack_pop1_any()
+    print([raw_val for val_type, raw_val in self.computation._stack.values])
+    # comp.opcodes[opcode_values.PUSH1](self.computation)
+    # self.execute(code)
+  def SUBTRACT(self):
+    self.computation.opcodes[opcode_values.SUB](self.computation)
+    # self.execute(code)
+  def POP1(self):
+    return self.computation.stack_pop1_any()
+
+evm = EVM()
+evm.PUSH1(b'\x01')
+evm.PUSH1(b'\x02')
+evm.SUBTRACT()
+result = evm.POP1()
 print(result)
