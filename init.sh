@@ -16,5 +16,5 @@ eval $'pyenv install 3.8-dev'
 # eval "$(pyenv init -)"
 
 eval $'pyenv init -'
-eval $'pyenv install 3.8-dev'
 eval $'pip install py-evm'
+eval $'pip install pycryptodome pysha3'

@@ -33,6 +33,17 @@ cd ..
 # run test.js to verify the opcodes were installed properly
 node ./custom-opcodes/test.js
 ```
+
+### install py-evm for the compiler on Mac
+```bash
+brew install openssl readline sqlite3 xz zlib
+brew update
+brew install pyenv
+pyenv install 3.8-dev
+pyenv init -
+pip install 3.8-dev
+pip install pycryptodome pysha3
+```
 # 2. Install dependencies
 ```bash
 npm install
