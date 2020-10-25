@@ -19,7 +19,7 @@ sh huff.sh
 pip install py-evm
 ```
 
-[huff.sh](/huff.sh) is an automated version of the following:
+[init.sh](/init.sh) is an automated version of the following:
 
 ```bash
 # Make sure you're in this projects main directory
