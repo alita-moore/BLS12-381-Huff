@@ -42,7 +42,7 @@ brew install pyenv
 pyenv install 3.8-dev
 pyenv init -
 pip install 3.8-dev
-pip install pycryptodome pysha3
+pip install pycryptodome pysha3 rusty-rlp
 ```
 # 2. Install dependencies
 ```bash
