@@ -1,6 +1,6 @@
 # BLS12-381-Huff
 
-BLS12-381 implementation in huff
+BLS12-381 implementation in huff. This project also contains a python -> huff low-level unnamed language that focuses on simplicity and debugging capabilities. To achieve this, it uses py-evm in parallel to the compilation of custom arithmetic handling. This is a work in progress.
 
 # 1. Install Huff compiler
 
