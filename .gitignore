@@ -9,3 +9,6 @@ src/.compiler
 src/__pycache__
 src/EVM/__pycache__
 env
+.idea
+venv
+src/MillerLoop/__pycache__
