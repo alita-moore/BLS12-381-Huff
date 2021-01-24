@@ -49,4 +49,19 @@ with open('MillerLoop.huff', 'w') as file:
 
 original = ''.join(open('original.huff', 'r').readlines())
 current = ''.join(open('MillerLoop.huff', 'r').readlines())
-print(original == current)
+print("Miller Loop output matches original: %s" % str(original == current))
+print()
+print("Point Uniqueness Total")
+print("Total unique points: %d, total possible: %d" % (len(_huff.points["all"]), _huff.loops["all"]))
+print("###################################")
+print("Point Call Frequency and Uniqueness Per Method")
+for _F in _huff.points:
+    if _F == "all":
+        continue
+    for _key in _huff.points[_F]:
+        sets = [len(_huff.points[_F][_key][i]) for i in _huff.points[_F][_key]]
+        loops = _huff.loops[_F][_key]
+        points_formatted = ", ".join(["%d:%d" % (i, len(_huff.points[_F][_key][i])) for i in _huff.points[_F][_key]])
+        print("%s | %s [%s] || %d" % (_F, _key, points_formatted, loops))
+
+

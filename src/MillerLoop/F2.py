@@ -1,6 +1,7 @@
 from src.MillerLoop.Constants import buffer_f2mul, zero
 from src.MillerLoop.F1 import F1
 from src.MillerLoop.Huff import Huff
+from src.MillerLoop.util import debug_points
 
 
 class F2:
@@ -26,10 +27,18 @@ class F2:
         out0 = out
         out1 = out + 48
 
-        a = F1(self.Huff, out0, x0, y0, mod)
-        b = F1(self.Huff, out1, x1, y1, mod)
-        self.F1 + a
-        self.F1 + b
+        p0 = F1(self.Huff, out0, x0, y0, mod)
+
+        p1 = F1(self.Huff, out1, x1, y1, mod)
+
+        # debugging -- this investigates the repetition of points
+        # _F = "F2"
+        # _key = "add"
+        # _P = [p0, p1]
+        debug_points([p0, p1], "F2", "add", self.Huff)
+
+        self.F1 + p0
+        self.F1 + p1
         # self.F1.gen_f1add(out0, x0, y0, mod)
         # self.F1.gen_f1add(out1, x1, y1, mod)
 
@@ -43,10 +52,13 @@ class F2:
         out0 = out
         out1 = out + 48
 
-        a = F1(self.Huff, out0, x0, y0, mod)
-        b = F1(self.Huff, out1, x1, y1, mod)
-        self.F1 - a
-        self.F1 - b
+        p0 = F1(self.Huff, out0, x0, y0, mod)
+        p1 = F1(self.Huff, out1, x1, y1, mod)
+
+        debug_points([p0, p1], "F2", "sub", self.Huff)
+
+        self.F1 - p0
+        self.F1 - p1
         # self.F1.gen_f1sub(out0, x0, y0, mod)
         # self.F1.gen_f1sub(out1, x1, y1, mod)
 
@@ -73,6 +85,9 @@ class F2:
         p5 = F1(Huff(), tmp3, y0, y1, mod)
         p6 = F1(Huff(), tmp2, tmp2, tmp3, mod)
         p7 = F1(Huff(), out1, tmp2, tmp1, mod)
+
+        P = [p0, p1, p2, p3, p4, p5, p6, p7]
+        debug_points(P, "F2", "mul", self.Huff)
 
         self.F1 * p0
         self.F1 * p1
@@ -103,6 +118,9 @@ class F2:
         p3 = F1(Huff(), out1, out1, out1, mod)
         p4 = F1(Huff(), out0, tmp0, tmp1, mod)
 
+        P = [p0, p1, p2, p3, p4]
+        debug_points(P, "F2", "sqr", self.Huff)
+
         self.F1 + p0
         self.F1 - p1
         self.F1 * p2
@@ -118,6 +136,10 @@ class F2:
         # gen_f2sub(out,zero,in_,mod)
         p0 = F1(Huff(), out, mod, in_, mod)
         p1 = F1(Huff(), out + 48, mod, in_ + 48, mod)
+
+        P = [p0, p1]
+        debug_points(P, "F2", "neg", self.Huff)
+
         self.F1 - p0
         self.F1 - p1
 
@@ -126,6 +148,10 @@ class F2:
 
         p0 = F1(Huff(), t, x, x + 48, mod)
         p1 = F1(Huff(), out + 48, x, x + 48, mod)
+
+        P = [p0, p1]
+        debug_points(P, "F2", "gen_mul_by_u_plus_1_fp2", self.Huff)
+
         self.F1 - p0
         self.F1 + p1
         self.Huff.gen_memcopy(out, t, 48)

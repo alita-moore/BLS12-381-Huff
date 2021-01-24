@@ -3,6 +3,7 @@ from src.MillerLoop.F2 import F2
 from src.MillerLoop.F1 import F1
 from src.MillerLoop.F6 import F6
 from src.MillerLoop.Huff import Huff
+from src.MillerLoop.util import debug_points
 
 
 class F12:
@@ -18,7 +19,7 @@ class F12:
         self.y = y
         self.mod = mod
 
-    def gen_f12add(self, out, x, y, mod):
+    def gen_f12add(self, out, x, y, mod):  # TODO: NOT USED
         self.f12add_count += 1
         self.Huff.pushln("// f6 add")
         x0 = x
@@ -37,7 +38,7 @@ class F12:
         # self.F6.gen_f6add(out0, x0, y0, mod)
         # self.F6.gen_f6add(out1, x1, y1, mod)
 
-    def gen_f12sub(self, out, x, y, mod):
+    def gen_f12sub(self, out, x, y, mod):  # TODO: NOT USED
         self.f12sub_count += 1
         self.Huff.pushln("// f6 add")
         x0 = x
@@ -174,6 +175,9 @@ class F12:
         p9 = F2(_Huff, _F1, out01, out01, t10, mod)
         p10 = F2(_Huff, _F1, out02, out02, t11, mod)
 
+        P = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10]
+        debug_points(P, "F12", "sqr", self.Huff)
+
         self.F6 + p0
 
         self.F2.gen_mul_by_u_plus_1_fp2(t12, x12, mod)
@@ -219,6 +223,10 @@ class F12:
     def gen_f12_conjugate(self, x, mod):
         x1 = x + 288
         p0 = F6(self.Huff, self.F2, x1, x1, 0, mod)
+
+        P = [p0]
+        debug_points(P, "F12", "conj", self.Huff)
+
         -p0
         # self.F6.gen_f6neg(x1, x1, mod)
 
@@ -241,6 +249,9 @@ class F12:
         p0 = F2(_Huff, _F1, t, x2, y, mod)
         p1 = F2(_Huff, _F1, out2, x1, y, mod)
         p2 = F2(_Huff, _F1, out1, x0, y, mod)
+
+        P = [p0, p1, p2]
+        debug_points(P, "F12", "gen_mul_by_0y0_fp6", self.Huff)
 
         self.F2 * p0
         self.F2 * p1
@@ -283,6 +294,9 @@ class F12:
         p8 = F2(_Huff, _F1, out2, x2, y0, mod)
         p9 = F2(_Huff, _F1, out2, out2, t1, mod)
         p10 = F2(_Huff, _F1, out0, t3, t0, mod)
+
+        P = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10]
+        debug_points(P, "F12", "gen_mul_by_xy0_fp6", self.Huff)
 
         self.F2 * p0
         self.F2 * p1
@@ -351,6 +365,9 @@ class F12:
         p4 = F2(_Huff, _F1, out00, t00, t12, mod)
         p5 = F2(_Huff, _F1, out01, t01, t10, mod)
         p6 = F2(_Huff, _F1, out02, t02, t11, mod)
+
+        P = [p0, p1, p2, p3, p4, p5, p6]
+        debug_points(P, "F12", "gen_mul_by_xy00z0_fp12", self.Huff)
 
         self.gen_mul_by_xy0_fp6(t0, x0, y, mod)
         self.gen_mul_by_0y0_fp6(t1, x1, y2, mod)

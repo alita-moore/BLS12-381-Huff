@@ -2,6 +2,7 @@ from src.MillerLoop.Constants import buffer_f6mul
 from src.MillerLoop.F2 import F2
 from src.MillerLoop.F1 import F1
 from src.MillerLoop.Huff import Huff
+from src.MillerLoop.util import debug_points
 
 
 class F6:
@@ -34,6 +35,9 @@ class F6:
         p1 = F2(Huff(), _F1, out1, x1, y1, mod)
         p2 = F2(Huff(), _F1, out2, x2, y2, mod)
 
+        P = [p0, p1, p2]
+        debug_points(P, "F6", "add", self.Huff)
+
         self.F2 + p0
         self.F2 + p1
         self.F2 + p2
@@ -59,6 +63,9 @@ class F6:
         p1 = F2(Huff(), _F1, out1, x1, y1, mod)
         p2 = F2(Huff(), _F1, out2, x2, y2, mod)
 
+        P = [p0, p1, p2]
+        debug_points(P, "F6", "sub", self.Huff)
+
         self.F2 - p0
         self.F2 - p1
         self.F2 - p2
@@ -82,6 +89,9 @@ class F6:
         p0 = F2(_huff, _F1, out0, x0, 0, mod)
         p1 = F2(_huff, _F1, out1, x1, 0, mod)
         p2 = F2(_huff, _F1, out2, x2, 0, mod)
+
+        P = [p0, p1, p2]
+        debug_points(P, "F6", "neg", self.Huff)
 
         -p0
         -p1
@@ -107,21 +117,6 @@ class F6:
         t4 = t3 + 96
         t5 = t4 + 96
 
-        # _Huff = self.Huff
-        # _F2 = self.F2
-        # _F1 = F1(self.Huff)
-        # p0 = F6(_Huff, _F2, t0, x0, x1, mod)
-        # p1 = F6(_Huff, _F2, t10, x00, t12, mod)
-        # p2 = F6(_Huff, _F2, t11, x01, x10, mod)
-        # p3 = F6(_Huff, _F2, t12, x02, x11, mod)
-        # p4 = F6(_Huff, _F2, t0, t0, t1, mod)
-        # p5 = F6(_Huff, _F2, t1, x0, x1, mod)
-        # p6 = F6(_Huff, _F2, out1, t1, t1, mod)
-        # p7 = F6(_Huff, _F2, out0, t0, t1, mod)
-        # p8 = F6(_Huff, _F2, out00, out00, t12, mod)
-        # p9 = F6(_Huff, _F2, out01, out01, t10, mod)
-        # p10 = F6(_Huff, _F2, out02, out02, t11, mod)
-
         _F1 = F1(Huff())
         p0 = F2(Huff(), _F1, t0, x0, y0, mod)
         p1 = F2(Huff(), _F1, t1, x1, y1, mod)
@@ -144,6 +139,9 @@ class F6:
         p18 = F2(Huff(), _F1, out2, out2, t2, mod)
         p19 = F2(Huff(), _F1, out2, out2, t1, mod)
         p20 = F2(Huff(), _F1, out0, t3, t0, mod)
+
+        P = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20]
+        debug_points(P, "F6", "mul", self.Huff)
 
         # algorithm
         self.F2 * p0

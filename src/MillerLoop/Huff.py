@@ -1,11 +1,60 @@
 import binascii
 import codecs
+from collections import defaultdict
 
 hexlify = codecs.getencoder('hex')
 
 class Huff:
     def __init__(self):
         self.lines = []
+        self.points = {
+            "F2": {
+                "mul": defaultdict(set),
+                "add": defaultdict(set),
+                "sub": defaultdict(set),
+                "sqr": defaultdict(set),
+                "neg": defaultdict(set),
+                "gen_mul_by_u_plus_1_fp2": defaultdict(set)
+            },
+            "F6": {
+                "add": defaultdict(set),
+                "sub": defaultdict(set),
+                "neg": defaultdict(set),
+                "mul": defaultdict(set)
+            },
+            "F12": {
+                "sqr": defaultdict(set),
+                "conj": defaultdict(set),
+                "gen_mul_by_0y0_fp6": defaultdict(set),
+                "gen_mul_by_xy0_fp6": defaultdict(set),
+                "gen_mul_by_xy00z0_fp12": defaultdict(set)
+            },
+            "all": set()
+        }
+        self.loops = {
+            "F2": {
+                "mul": 0,
+                "add": 0,
+                "sub": 0,
+                "sqr": 0,
+                "neg": 0,
+                "gen_mul_by_u_plus_1_fp2": 0
+            },
+            "F6": {
+                "add": 0,
+                "sub": 0,
+                "neg": 0,
+                "mul": 0
+            },
+            "F12": {
+                "sqr": 0,
+                "conj": 0,
+                "gen_mul_by_0y0_fp6": 0,
+                "gen_mul_by_xy0_fp6": 0,
+                "gen_mul_by_xy00z0_fp12": 0
+            },
+            "all": 0
+        }
 
     def _clear_(self):
         self.lines = []
