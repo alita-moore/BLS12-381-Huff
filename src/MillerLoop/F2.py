@@ -4,12 +4,17 @@ from src.MillerLoop.Huff import Huff
 
 
 class F2:
-    def __init__(self, huff: Huff, f1: F1):
+    def __init__(self, huff: Huff, f1: F1, out=0, x=0, y=0, mod=0):
         self.Huff = huff
         self.F1 = f1
         self.f2add_count = 0
         self.f2sub_count = 0
         self.f2mul_count = 0
+
+        self.out = out
+        self.x = x
+        self.y = y
+        self.mod = mod
 
     def gen_f2add(self, out, x, y, mod):
         self.f2add_count += 1
@@ -124,3 +129,38 @@ class F2:
         self.F1 - p0
         self.F1 + p1
         self.Huff.gen_memcopy(out, t, 48)
+
+    def __add__(self, other):
+        _out = other.out
+        _x = other.x
+        _y = other.y
+        _mod = other.mod
+        self.gen_f2add(_out, _x, _y, _mod)
+
+    def __sub__(self, other):
+        _out = other.out
+        _x = other.x
+        _y = other.y
+        _mod = other.mod
+        self.gen_f2sub(_out, _x, _y, _mod)
+
+    def __mul__(self, other):
+        _out = other.out
+        _x = other.x
+        _y = other.y
+        _mod = other.mod
+        self.gen_f2mul(_out, _x, _y, _mod)
+
+    def __neg__(self):
+        _out = self.out
+        _x = self.x
+        _mod = self.mod
+        self.gen_f2neg(_out, _x, _mod)
+
+    def __pow__(self, power):
+        if not power == 2:
+            raise ArithmeticError("only squaring is supported")
+        _out = self.out
+        _x = self.x
+        _mod = self.mod
+        self.gen_f2sqr(_out, _x, _mod)

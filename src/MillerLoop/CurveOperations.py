@@ -1,4 +1,4 @@
-from src.MillerLoop import F1
+from src.MillerLoop.F1 import F1
 from src.MillerLoop.Constants import buffer_Eadd, f12one, mod, buffer_line, zero, buffer_Edouble
 from src.MillerLoop.F12 import F12
 from src.MillerLoop.F2 import F2
@@ -302,6 +302,8 @@ class CurveOperations:
         E = D + int(f[1]) * 48
         F = E + int(f[1]) * 48
 
+
+
         self.Huff.pushln("// A = X1^2")
         self.gen_fmul(f, A, X1, X1, mod)
         self.Huff.pushln("// B = Y1^2")
@@ -359,13 +361,25 @@ class CurveOperations:
         line2 = line1 + 96
         # ecadd
         I, J, r = self.gen_Eadd__madd_2007_bl("f2", T, R, Q, line1, mod)
-        # line eval
-        self.F2.gen_f2mul(I, r, QX, mod)
-        self.F2.gen_f2mul(J, QY, TZ, mod)
-        self.F2.gen_f2sub(I, I, J, mod)
-        self.F2.gen_f2add(line0, I, I, mod)
-        # gen_memcopy(line1,r,96)	# already done in the
+
+        p0 = F2(self.Huff, self.F1, I, r, QX, mod)
+        p1 = F2(self.Huff, self.F1, J, QY, TZ, mod)
+        p2 = F2(self.Huff, self.F1, I, I, J, mod)
+        p3 = F2(self.Huff, self.F1, line0, I, I, mod)
+
+        self.F2 * p0
+        self.F2 * p1
+        self.F2 - p2
+        self.F2 + p3
         self.Huff.gen_memcopy(line2, TZ, 96)
+
+        # # line eval
+        # self.F2.gen_f2mul(I, r, QX, mod)
+        # self.F2.gen_f2mul(J, QY, TZ, mod)
+        # self.F2.gen_f2sub(I, I, J, mod)
+        # self.F2.gen_f2add(line0, I, I, mod)
+        # # gen_memcopy(line1,r,96)	# already done in the
+        # self.Huff.gen_memcopy(line2, TZ, 96)
 
     def gen_line_dbl(self, line, T, Q, mod):
         # line is 3 f2s, T is E2 point, Q E2 point	(note: our pairing algorithm, T=Q)
@@ -378,14 +392,32 @@ class CurveOperations:
         A, B, E, F, ZZ, X1 = self.gen_Edouble__dbl_2009_alnr("f2", T, Q, line0, mod)
         # eval line
         # note: line0=E+QX is already done in alnr function
-        self.F2.gen_f2sqr(line0, line0, mod)
-        self.F2.gen_f2sub(line0, line0, A, mod)
-        self.F2.gen_f2sub(line0, line0, F, mod)
-        self.F2.gen_f2add(B, B, B, mod)
-        self.F2.gen_f2add(B, B, B, mod)
-        self.F2.gen_f2sub(line0, line0, B, mod)
-        self.F2.gen_f2mul(line1, E, ZZ, mod)
-        self.F2.gen_f2mul(line2, TZ, ZZ, mod)
+
+        p0 = F2(self.Huff, self.F1, line0, line0, 0, mod)
+        p1 = F2(self.Huff, self.F1, line0, line0, A, mod)
+        p2 = F2(self.Huff, self.F1, line0, line0, F, mod)
+        p3 = F2(self.Huff, self.F1, B, B, B, mod)
+        p4 = F2(self.Huff, self.F1, line0, line0, B, mod)
+        p5 = F2(self.Huff, self.F1, line1, E, ZZ, mod)
+        p6 = F2(self.Huff, self.F1, line2, TZ, ZZ, mod)
+
+        p0**2
+        self.F2 - p1
+        self.F2 - p2
+        self.F2 + p3
+        self.F2 + p3
+        self.F2 - p4
+        self.F2 * p5
+        self.F2 * p6
+
+        # self.F2.gen_f2sqr(line0, line0, mod)  # 0
+        # self.F2.gen_f2sub(line0, line0, A, mod)  # 1
+        # self.F2.gen_f2sub(line0, line0, F, mod)  # 2
+        # self.F2.gen_f2add(B, B, B, mod)  # 3
+        # self.F2.gen_f2add(B, B, B, mod)  # 3
+        # self.F2.gen_f2sub(line0, line0, B, mod)  # 4
+        # self.F2.gen_f2mul(line1, E, ZZ, mod)  # 5
+        # self.F2.gen_f2mul(line2, TZ, ZZ, mod)  # 6
 
     def gen_line_by_Px2(self, line, Px2, mod):
         # line is 3 f2s, Px2 is E1 point affine
@@ -397,10 +429,20 @@ class CurveOperations:
         line11 = line10 + 48
         line20 = line11 + 48
         line21 = line20 + 48
-        self.F1.gen_f1mul(line10, line10, Px2X, mod)
-        self.F1.gen_f1mul(line11, line11, Px2X, mod)
-        self.F1.gen_f1mul(line20, line20, Px2Y, mod)
-        self.F1.gen_f1mul(line21, line21, Px2Y, mod)
+
+        p0 = F1(self.Huff, line10, line10, Px2X, mod)
+        p1 = F1(self.Huff, line11, line11, Px2X, mod)
+        p2 = F1(self.Huff, line20, line20, Px2Y, mod)
+        p3 = F1(self.Huff, line21, line21, Px2Y, mod)
+        self.F1 * p0
+        self.F1 * p1
+        self.F1 * p2
+        self.F1 * p3
+
+        # self.F1.gen_f1mul(line10, line10, Px2X, mod)
+        # self.F1.gen_f1mul(line11, line11, Px2X, mod)
+        # self.F1.gen_f1mul(line20, line20, Px2Y, mod)
+        # self.F1.gen_f1mul(line21, line21, Px2Y, mod)
 
     def gen_start_dbl(self, out, T, Px2, mod):
         # out is f12 point (ie 2 f6 pts), T is E2 point, Px2 is E1 point (affine)
@@ -431,7 +473,8 @@ class CurveOperations:
         self.F12.gen_mul_by_xy00z0_fp12(out, out, line, mod)
         self.Huff.pushln("end_if:")
         # self.Huff.pushln("0xffffffff pop")
-        self.F12.gen_f12sqr(out, out, mod)
+        p0 = F12(self.Huff, self.F2, self.F6, out, out, 0, mod)
+        p0**2  # self.F12.gen_f12sqr(out, out, mod)
         self.gen_line_dbl(line, T, T, mod)
         self.gen_line_by_Px2(line, Px2, mod)
         self.F12.gen_mul_by_xy00z0_fp12(out, out, line, mod)
@@ -440,14 +483,14 @@ class CurveOperations:
         self.Huff.pushln("miller_loop jumpi")  # if loop iterator > 0, then jump to next iter
         self.Huff.pushln("pop")  # pop loop iterator to leave stack how we found it
 
-    def gen_add_dbl_unrolled(self, out, T, Q, Px2, k, mod):
+    def gen_add_dbl_unrolled(self, out, T, Q, Px2, k, mod):  # TODO: untouched / find test
         line = buffer_line  # 3 f2 points
         """
       gen_line_add(line,T,T,Q,mod)
       gen_line_by_Px2(line,Px2,mod)
       gen_mul_by_xy00z0_fp12(out,out,line,mod)
       """
-        # loop init   #TODO
+        # loop init
         # put k on stack
         # while(k--)
         for i in range(k):
@@ -457,41 +500,50 @@ class CurveOperations:
             self.F12.gen_mul_by_xy00z0_fp12(out, out, line, mod)
 
     def gen_fsqr(self, f, out, x, mod):
-        if f == "f12":
+        if f == "f12":  # TODO: untouched / find test
             self.F12.gen_f12sqr(out, x, mod)
-        if f == "f6":
+        if f == "f6":  # TODO: untouched / find test
             self.F6.gen_f6sqr(out, x, mod)
         if f == "f2":
-            self.F2.gen_f2sqr(out, x, mod)
-        if f == "f1":
+            p0 = F2(self.Huff, self.F1, out, x, 0, mod)
+            p0**2
+            # self.F2.gen_f2sqr(out, x, mod)
+        if f == "f1":  # TODO: untouched / find test
             self.F1.gen_f1sqr(out, x, mod)
 
     def gen_fadd(self, f, out, x, y, mod):
-        if f == "f12":
+        if f == "f12":  # TODO: untouched / find test
             self.F12.gen_f12add(out, x, y, mod)
-        if f == "f6":
+        if f == "f6":  # TODO: untouched / find test
             self.F6.gen_f6add(out, x, y, mod)
         if f == "f2":
-            self.F2.gen_f2add(out, x, y, mod)
-        if f == "f1":
+            p0 = F2(self.Huff, self.F1, out, x, y, mod)
+            self.F2 + p0
+            # self.F2.gen_f2add(out, x, y, mod)
+        if f == "f1":  # TODO: untouched / find test
             self.F1.gen_f1add(out, x, y, mod)
 
     def gen_fsub(self, f, out, x, y, mod):
-        if f == "f12":
+        if f == "f12":  # TODO: untouched / find test
             self.F12.gen_f12sub(out, x, y, mod)
-        if f == "f6":
+        if f == "f6":  # TODO: untouched / find test
             self.F6.gen_f6sub(out, x, y, mod)
         if f == "f2":
-            self.F2.gen_f2sub(out, x, y, mod)
-        if f == "f1":
+            p0 = F2(self.Huff, self.F1, out, x, y, mod)
+            self.F2 - p0
+            # self.F2.gen_f2sub(out, x, y, mod)
+        if f == "f1":  # TODO: untouched / find test
             self.F1.gen_f1sub(out, x, y, mod)
 
     def gen_fmul(self, f, out, x, y, mod):
-        if f == "f12":
+        if f == "f12":  # TODO: untouched / find test
+            p0 = F12(self.Huff, self.F2, self.F6, out, x, y, mod)
+            # self.F12 * p0
             self.F12.gen_f12mul(out, x, y, mod)
-        if f == "f6":
+        if f == "f6":  # TODO: untouched / find test
             self.F6.gen_f6mul(out, x, y, mod)
         if f == "f2":
-            self.F2.gen_f2mul(out, x, y, mod)
-        if f == "f1":
+            p0 = F2(self.Huff, self.F1, out, x, y, mod)
+            self.F2 * p0
+        if f == "f1":  # TODO: untouched / find test
             self.F1.gen_f1mul(out, x, y, mod)
